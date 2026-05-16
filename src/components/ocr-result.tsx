@@ -72,7 +72,7 @@ function StructuredView({ raw, ocrText }: { raw: string; ocrText?: string }) {
             Structured JSON
           </button>
           {showPayload && (
-            <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-72">{raw}</pre>
+            <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-72">{(() => { try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; } })()}</pre>
           )}
         </div>
       </div>
@@ -86,25 +86,25 @@ function StructuredView({ raw, ocrText }: { raw: string; ocrText?: string }) {
           <Text className="h-3.5 w-3.5" />
           {fields.length > 1 ? `${fields.length} fields` : "1 field"}
         </h4>
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50">
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Name</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Display</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Type</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Value</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Name</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Display</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Type</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">Value</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {fields.map((f, i) => (
                 <tr key={i} className="even:bg-muted/20">
-                  <td className="px-3 py-2 text-xs font-mono text-muted-foreground">{f.name}</td>
-                  <td className="px-3 py-2 text-xs font-medium">{f.display}</td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className="px-3 py-2 text-xs font-mono text-muted-foreground whitespace-nowrap">{f.name}</td>
+                  <td className="px-3 py-2 text-xs font-medium whitespace-nowrap">{f.display}</td>
+                  <td className="px-3 py-2 text-xs whitespace-nowrap">
                     <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{f.type}</span>
                   </td>
-                  <td className="px-3 py-2 text-xs">{f.value}</td>
+                  <td className="px-3 py-2 text-xs break-words min-w-[120px] max-w-[300px]">{f.value}</td>
                 </tr>
               ))}
             </tbody>
@@ -137,13 +137,13 @@ function StructuredView({ raw, ocrText }: { raw: string; ocrText?: string }) {
           {showPayload ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           Structured JSON
         </button>
-        {showPayload && (
-          <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-72">{raw}</pre>
-        )}
+          {showPayload && (
+            <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-72">{(() => { try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; } })()}</pre>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 export function OcrResult({ result, loading, extracting, extractionModel }: OcrResultProps) {
   const [copied, setCopied] = useState(false);
