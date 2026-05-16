@@ -47,7 +47,9 @@ const BASE_SCHEMA = {
 };
 
 function buildStructuredPrompt(ocrText: string, fields: { name: string; display: string; description: string; type: string }[]): string {
-  let fieldList = "- Document type, title, tables, summary";
+  let fieldList: string;
+  let instructions: string;
+
   if (fields.length > 0) {
     fieldList = fields
       .map((f) => {
@@ -58,28 +60,42 @@ function buildStructuredPrompt(ocrText: string, fields: { name: string; display:
         return parts.join(" ");
       })
       .join("\n");
-    fieldList += "\n- Document type, title, any tables, summary";
-  }
 
-  return `You are a document analysis assistant. Analyze this document image and its OCR text to extract structured information.
+    instructions = `Extract ONLY the specific fields listed below from the document. Do NOT invent or extract any additional fields beyond what is specified.
 
-Document OCR Text:
-${ocrText}
-
-Extract the following specific fields from the document:
+Fields to extract:
 ${fieldList}
+
+For each extracted field include: name (machine-readable identifier), display (human-readable label), description (what it represents), type (data type), and value (extracted content).`;
+  } else {
+    instructions = `Extract structured information from the document including: document type, title, any tables found, and a brief summary. Also extract any relevant key-value fields present in the document.
 
 For each field include: name (machine-readable identifier), display (human-readable label), description (what it represents), type (data type), and value (extracted content).
 
 Return the result as valid JSON following the specified schema.`;
+  }
+
+  return `You are a document analysis assistant. Analyze the OCR text below to extract structured information.
+
+Document OCR Text:
+${ocrText}
+
+${instructions}`;
 }
 
 async function callOllama(url: string, body: unknown): Promise<Response> {
-  return fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 300000);
+  try {
+    return await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function handleFetchError(url: string, model: string, label: string, err: unknown) {
