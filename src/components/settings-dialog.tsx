@@ -136,7 +136,7 @@ export function SettingsDialog({
               )}
             >
               <option value="gemma3:4b">gemma3:4b</option>
-              <option value="gemma4:12b-cloud">gemma4:12b-cloud</option>
+              <option value="gemma3:12b-cloud">gemma3:12b-cloud</option>
             </select>
             <p className="text-xs text-muted-foreground">
               Used for structured field extraction after OCR
