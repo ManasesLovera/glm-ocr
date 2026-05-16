@@ -47,6 +47,7 @@ export interface OcrResponse {
 export interface Settings {
   host: string;
   model: string;
+  extractionModel: string;
 }
 
 export interface HistoryItem {

@@ -20,6 +20,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const [host, setHost] = useState(settings.host);
   const [model, setModel] = useState(settings.model);
+  const [extractionModel, setExtractionModel] = useState(settings.extractionModel || "gemma3:4b");
   const [testStatus, setTestStatus] = useState<"idle" | "testing" | "ok" | "fail">("idle");
   const [testMessage, setTestMessage] = useState("");
 
@@ -122,6 +123,26 @@ export function SettingsDialog({
             />
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none">
+              Extraction Model
+            </label>
+            <select
+              value={extractionModel}
+              onChange={(e) => setExtractionModel(e.target.value)}
+              className={cn(
+                "flex h-10 w-full rounded-lg border bg-background px-3 py-2 text-sm transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+              )}
+            >
+              <option value="gemma3:4b">gemma3:4b</option>
+              <option value="gemma4:12b-cloud">gemma4:12b-cloud</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Used for structured field extraction after OCR
+            </p>
+          </div>
+
           <button
             onClick={testConnection}
             disabled={testStatus === "testing"}
@@ -170,7 +191,7 @@ export function SettingsDialog({
           </button>
           <button
             onClick={() => {
-              onSave({ host, model });
+              onSave({ host, model, extractionModel });
               onClose();
             }}
             className={cn(

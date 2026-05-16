@@ -20,6 +20,7 @@ const BASE_SCHEMA = {
           value: { type: "string" },
         },
         required: ["name", "value"],
+        additionalProperties: false,
       },
     },
     tables: {
@@ -35,10 +36,14 @@ const BASE_SCHEMA = {
             items: { type: "array", items: { type: "string" } },
           },
         },
+        required: [],
+        additionalProperties: false,
       },
     },
     summary: { type: "string", description: "Brief summary of the document content" },
   },
+  required: ["documentType", "title", "fields", "summary"],
+  additionalProperties: false,
 };
 
 function buildStructuredPrompt(ocrText: string, fields: { name: string; display: string; description: string; type: string }[]): string {
@@ -117,7 +122,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { image, mode, host, model, useStructured, structuredFields, ocrText: preOcrText } = body;
+    const { image, mode, host, model, useStructured, structuredFields, ocrText: preOcrText, extractionModel } = body;
 
     if (!image) return NextResponse.json({ error: "Image is required" }, { status: 400 });
     if (!mode) return NextResponse.json({ error: "Mode is required" }, { status: 400 });
@@ -186,11 +191,13 @@ export async function POST(request: NextRequest) {
     const fields = (structuredFields as { name: string; display: string; description: string; type: string }[]) || [];
     const structuredPrompt = buildStructuredPrompt(ocrText, fields);
 
+    const extractModel = (extractionModel as string) || "gemma3:4b";
+
     let gemmaRes: Response;
     try {
       gemmaRes = await callOllama(gemmaUrl, {
-        model: "gemma3:12b-cloud",
-        messages: [{ role: "user", content: structuredPrompt, images: [image] }],
+        model: extractModel,
+        messages: [{ role: "user", content: structuredPrompt }],
         stream: false,
         format: BASE_SCHEMA,
         options: { temperature: 0 },
@@ -200,7 +207,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         text: ocrText,
         structured: null,
-        error: "Structured extraction failed — connection to gemma3:4b failed",
+        error: `Structured extraction failed — connection to ${extractModel} failed`,
         done: true,
         evalCount: ocrEvalCount,
         evalDuration: ocrEvalDuration,
@@ -213,7 +220,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         text: ocrText,
         structured: null,
-        error: `Structured extraction failed — gemma3:4b returned HTTP ${gemmaRes.status}`,
+        error: `Structured extraction failed — ${extractModel} returned HTTP ${gemmaRes.status}`,
         done: true,
         evalCount: ocrEvalCount,
         evalDuration: ocrEvalDuration,
@@ -228,7 +235,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         text: ocrText,
         structured: null,
-        error: "Structured extraction failed — gemma3:4b returned invalid JSON",
+        error: `Structured extraction failed — ${extractModel} returned invalid JSON`,
         done: true,
         evalCount: ocrEvalCount,
         evalDuration: ocrEvalDuration,
@@ -237,18 +244,28 @@ export async function POST(request: NextRequest) {
 
     console.error("[OCR] Gemma3 raw response:", JSON.stringify(gemmaData).slice(0, 500));
 
-    // Handle both chat and generate response formats
-    const msg = gemmaData.message as Record<string, unknown> | undefined;
     let structuredRaw = "";
-    if (msg?.content && typeof msg.content === "string") {
+    const msg = gemmaData.message as Record<string, unknown> | undefined;
+    if (msg && typeof msg.content === "string") {
       structuredRaw = msg.content;
-    } else if (msg && typeof msg === "object") {
-      structuredRaw = JSON.stringify(msg);
     } else if (gemmaData.response && typeof gemmaData.response === "string") {
       structuredRaw = gemmaData.response as string;
+    } else if (msg && typeof msg === "object") {
+      structuredRaw = JSON.stringify(msg);
     }
 
     console.error("[OCR] Gemma3 extracted content length:", structuredRaw.length, structuredRaw.slice(0, 200));
+
+    if (!structuredRaw) {
+      return NextResponse.json({
+        text: ocrText,
+        structured: null,
+        error: `${extractModel} returned empty content`,
+        done: true,
+        evalCount: ocrEvalCount,
+        evalDuration: ocrEvalDuration,
+      });
+    }
 
     const gemmaEvalCount = (gemmaData.eval_count as number) ?? undefined;
     const gemmaEvalDuration = (gemmaData.eval_duration as number) ?? undefined;

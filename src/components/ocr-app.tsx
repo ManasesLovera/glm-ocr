@@ -17,6 +17,7 @@ import { FieldConfigModal } from "@/components/field-config";
 const DEFAULT_SETTINGS: Settings = {
   host: "http://192.168.1.9:11434",
   model: "glm-ocr:q8_0",
+  extractionModel: "gemma3:4b",
 };
 
 function loadHistory(): HistoryItem[] {
@@ -318,7 +319,7 @@ export function OcrApp() {
               </div>
 
               <div className="mt-6 md:mt-0">
-                <OcrResult result={result} loading={loading} />
+                <OcrResult result={result} loading={loading} extracting={extracting} extractionModel={settings.extractionModel} />
               </div>
             </div>
           </div>
