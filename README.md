@@ -88,4 +88,8 @@ Settings are not persisted — defaults are always used on reload.
 ### Updating setting values for ollama host url, model selection for extraction, test ollama connection
 <img width="521" height="576" alt="image" src="https://github.com/user-attachments/assets/f354b813-d71f-42e8-82be-1ff7d1b449fe" />
 
+### Light mode
+<img width="1891" height="903" alt="image" src="https://github.com/user-attachments/assets/4e6fa2bb-aa28-4408-9831-98f66abb6470" />
+
+
 
