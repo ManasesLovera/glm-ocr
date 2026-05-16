@@ -76,3 +76,16 @@ Settings are not persisted — defaults are always used on reload.
 - react-markdown + remark-gfm
 - lucide-react icons
 - sonner (toast notifications)
+
+## Examples
+
+### OCR Result + history
+<img width="1903" height="983" alt="image" src="https://github.com/user-attachments/assets/c159381d-be8f-428c-9067-d4cf680cf981" />
+
+### Configuring structured output fields
+<img width="1213" height="890" alt="image" src="https://github.com/user-attachments/assets/056906ed-66b1-46b2-8e78-c339da44b09c" />
+
+### Updating setting values for ollama host url, model selection for extraction, test ollama connection
+<img width="521" height="576" alt="image" src="https://github.com/user-attachments/assets/f354b813-d71f-42e8-82be-1ff7d1b449fe" />
+
+
