@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #f8f9ff;
+  --foreground: #09090b;
+  --muted: #f1f0fb;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --ring: #4f46e5;
+  --mode-text: #2563eb;
+  --mode-table: #059669;
+  --mode-figure: #7c3aed;
+}
+
+.dark {
+  --background: #0f0f1a;
+  --foreground: #fafafa;
+  --muted: #1e1b4b;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --accent: #1e1b4b;
+  --accent-foreground: #a5b4fc;
+  --primary: #818cf8;
+  --primary-foreground: #0f0f1a;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --ring: #818cf8;
+  --mode-text: #60a5fa;
+  --mode-table: #34d399;
+  --mode-figure: #a78bfa;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, ui-sans-serif, system-ui);
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(79, 70, 229, 0.04), transparent 70%);
+}
+
+.dark body {
+  background-image: radial-gradient(ellipse at 50% 0%, rgba(129, 140, 248, 0.06), transparent 70%);
+}
+
+* {
+  border-color: var(--border);
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
