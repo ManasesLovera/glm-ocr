@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Copy, Check, Clock, Sparkles, AlertCircle, Loader2, Bug, ChevronDown, ChevronRight, FileType, Table2, Text, Cpu } from "lucide-react";
+import { Copy, Check, Clock, Sparkles, AlertCircle, Loader2, Bug, ChevronDown, ChevronRight, Text, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OcrResponse } from "@/lib/types";
 
@@ -18,47 +18,52 @@ function StructuredView({ raw, ocrText }: { raw: string; ocrText?: string }) {
   const [showRaw, setShowRaw] = useState(false);
   const [showPayload, setShowPayload] = useState(false);
 
-  let parsed: Record<string, unknown> | null = null;
+  let fields: Array<{ name: string; display: string; description: string; type: string; value: string }> = [];
   try {
-    parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      fields = parsed as typeof fields;
+    }
   } catch {
     return (
-      <div className="p-5">
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
-          Failed to parse structured output
+      <div className="divide-y">
+        <div className="p-5">
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+            Failed to parse structured output
+          </div>
+          <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto">{raw}</pre>
         </div>
-        <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto">{raw}</pre>
+        {ocrText && (
+          <div className="prose prose-sm dark:prose-invert max-w-none overflow-auto p-5 border-t">
+            <div className="text-xs font-medium text-muted-foreground mb-2">OCR Text</div>
+            <Markdown remarkPlugins={[remarkGfm]}>{ocrText}</Markdown>
+          </div>
+        )}
       </div>
     );
   }
 
-  const docType = parsed?.documentType as string | undefined;
-  const title = parsed?.title as string | undefined;
-  const fields = parsed?.fields as Array<{ name: string; display: string; description: string; type: string; value: string }> | undefined;
-  const tables = parsed?.tables as Array<{ caption?: string; headers?: string[]; rows?: string[][] }> | undefined;
-  const summary = parsed?.summary as string | undefined;
-
-  const hasContent = docType || title || (fields && fields.length > 0) || (tables && tables.length > 0) || summary;
-
-  if (!hasContent) {
+  if (fields.length === 0) {
     return (
       <div className="p-5 space-y-3">
         <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-          Structured output was returned but contains no extractable fields. The extraction model may not have found relevant data in this document.
+          No fields were extracted from the document.
         </div>
-        <div className="px-5 py-3 border-t">
-          <button
-            onClick={() => setShowRaw(!showRaw)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showRaw ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-            Raw OCR text
-          </button>
-          {showRaw && (
-            <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-48">{ocrText}</pre>
-          )}
-        </div>
-        <div className="px-5 py-3 border-t">
+        {ocrText && (
+          <div className="border-t px-5 py-3">
+            <button
+              onClick={() => setShowRaw(!showRaw)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showRaw ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              Raw OCR text
+            </button>
+            {showRaw && (
+              <pre className="mt-2 rounded-lg bg-muted p-3 text-xs overflow-auto whitespace-pre-wrap max-h-48">{ocrText}</pre>
+            )}
+          </div>
+        )}
+        <div className="border-t px-5 py-3">
           <button
             onClick={() => setShowPayload(!showPayload)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -76,101 +81,36 @@ function StructuredView({ raw, ocrText }: { raw: string; ocrText?: string }) {
 
   return (
     <div className="divide-y">
-      {/* Header */}
-      {(docType || title) && (
-        <div className="px-5 py-4 space-y-2">
-          {docType && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-              <FileType className="mr-1 h-3 w-3" />
-              {docType}
-            </span>
-          )}
-          {title && <h3 className="text-base font-semibold">{title}</h3>}
-        </div>
-      )}
-
-      {/* Fields */}
-      {fields && fields.length > 0 && (
-        <div className="px-5 py-4 space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Text className="h-3.5 w-3.5" />
-            Fields
-          </h4>
-          <div className="overflow-hidden rounded-lg border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Name</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Display</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Type</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Value</th>
+      <div className="px-5 py-4 space-y-2">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Text className="h-3.5 w-3.5" />
+          {fields.length > 1 ? `${fields.length} fields` : "1 field"}
+        </h4>
+        <div className="overflow-hidden rounded-lg border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Name</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Display</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Type</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Value</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {fields.map((f, i) => (
+                <tr key={i} className="even:bg-muted/20">
+                  <td className="px-3 py-2 text-xs font-mono text-muted-foreground">{f.name}</td>
+                  <td className="px-3 py-2 text-xs font-medium">{f.display}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{f.type}</span>
+                  </td>
+                  <td className="px-3 py-2 text-xs">{f.value}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y">
-                {fields.map((f, i) => (
-                  <tr key={i} className="even:bg-muted/20">
-                    <td className="px-3 py-2 text-xs font-mono text-muted-foreground">{f.name}</td>
-                    <td className="px-3 py-2 text-xs font-medium">{f.display}</td>
-                    <td className="px-3 py-2 text-xs">
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{f.type}</span>
-                    </td>
-                    <td className="px-3 py-2 text-xs">{f.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {/* Tables */}
-      {tables && tables.length > 0 && (
-        <div className="px-5 py-4 space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Table2 className="h-3.5 w-3.5" />
-            Tables
-          </h4>
-          {tables.map((t, i) => (
-            <div key={i} className="overflow-hidden rounded-lg border">
-              {t.caption && (
-                <div className="bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground border-b">
-                  {t.caption}
-                </div>
-              )}
-              <table className="w-full text-sm">
-                {t.headers && t.headers.length > 0 && (
-                  <thead>
-                    <tr className="bg-muted/50">
-                      {t.headers.map((h, j) => (
-                        <th key={j} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                )}
-                {t.rows && t.rows.length > 0 && (
-                  <tbody className="divide-y">
-                    {t.rows.map((row, j) => (
-                      <tr key={j} className="even:bg-muted/20">
-                        {row.map((cell, k) => (
-                          <td key={k} className="px-3 py-2 text-xs">{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                )}
-              </table>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Summary */}
-      {summary && (
-        <div className="px-5 py-4">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Summary</h4>
-          <p className="text-sm text-muted-foreground">{summary}</p>
-        </div>
-      )}
+      </div>
 
       {/* Raw OCR text */}
       {ocrText && (
@@ -269,8 +209,8 @@ export function OcrResult({ result, loading, extracting, extractionModel }: OcrR
 
   if (result.error) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 animate-in fade-in duration-300 dark:border-red-900 dark:bg-red-950/30">
-        <div className="flex items-start gap-3">
+      <div className="rounded-xl border bg-card overflow-hidden animate-in fade-in duration-300">
+        <div className="flex items-start gap-3 border-b border-red-200 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950/30">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
           <div className="min-w-0 flex-1">
             <p className="font-medium text-red-800 dark:text-red-200">Error</p>
@@ -302,6 +242,12 @@ export function OcrResult({ result, loading, extracting, extractionModel }: OcrR
             )}
           </div>
         </div>
+        {result.text && (
+          <div className="prose prose-sm dark:prose-invert max-w-none overflow-auto p-5 border-t border-red-100 dark:border-red-900">
+            <div className="text-xs font-medium text-muted-foreground mb-2">OCR Text</div>
+            <Markdown remarkPlugins={[remarkGfm]}>{result.text}</Markdown>
+          </div>
+        )}
       </div>
     );
   }

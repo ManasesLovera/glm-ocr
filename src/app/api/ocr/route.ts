@@ -2,47 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const maxDuration = 300;
 
-const BASE_SCHEMA = {
+const FIELD_ITEM_SCHEMA = {
   type: "object",
   properties: {
-    documentType: { type: "string", description: "Type of document (invoice, form, receipt, letter, report, etc.)" },
-    title: { type: "string", description: "Document title or main heading" },
-    fields: {
-      type: "array",
-      description: "Extracted fields from the document",
-      items: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-          display: { type: "string" },
-          description: { type: "string" },
-          type: { type: "string" },
-          value: { type: "string" },
-        },
-        required: ["name", "value"],
-        additionalProperties: false,
-      },
-    },
-    tables: {
-      type: "array",
-      description: "Any tables found in the document",
-      items: {
-        type: "object",
-        properties: {
-          caption: { type: "string" },
-          headers: { type: "array", items: { type: "string" } },
-          rows: {
-            type: "array",
-            items: { type: "array", items: { type: "string" } },
-          },
-        },
-        required: [],
-        additionalProperties: false,
-      },
-    },
-    summary: { type: "string", description: "Brief summary of the document content" },
+    name: { type: "string" },
+    display: { type: "string" },
+    description: { type: "string" },
+    type: { type: "string" },
+    value: { type: "string" },
   },
-  required: ["documentType", "title", "fields", "summary"],
+  required: ["name", "value"],
   additionalProperties: false,
 };
 
@@ -68,19 +37,46 @@ ${fieldList}
 
 For each extracted field include: name (machine-readable identifier), display (human-readable label), description (what it represents), type (data type), and value (extracted content).`;
   } else {
-    instructions = `Extract structured information from the document including: document type, title, any tables found, and a brief summary. Also extract any relevant key-value fields present in the document.
+    instructions = `Extract all relevant key-value fields present in the document. Identify meaningful data points such as names, dates, identifiers, amounts, and other information.
 
-For each field include: name (machine-readable identifier), display (human-readable label), description (what it represents), type (data type), and value (extracted content).
-
-Return the result as valid JSON following the specified schema.`;
+For each extracted field include: name (machine-readable identifier), display (human-readable label), description (what it represents), type (data type), and value (extracted content).`;
   }
 
-  return `You are a document analysis assistant. Analyze the OCR text below to extract structured information.
+  return `You are a document analysis assistant. Analyze the OCR text below and extract fields as a JSON array of objects.
 
 Document OCR Text:
 ${ocrText}
 
-${instructions}`;
+${instructions}
+
+Return the result as a JSON array of field objects. Example format:
+[
+  {
+    "name": "field_name",
+    "display": "Field Display Name",
+    "description": "What this field represents",
+    "type": "string",
+    "value": "Extracted value"
+  }
+]`;
+}
+
+function extractJSON(raw: string): string | null {
+  const trimmed = raw.trim();
+  const firstBrace = trimmed.indexOf("{");
+  const firstBracket = trimmed.indexOf("[");
+  let start: number;
+  if (firstBrace === -1 && firstBracket >= 0) start = firstBracket;
+  else if (firstBracket === -1 && firstBrace >= 0) start = firstBrace;
+  else if (firstBrace >= 0 && firstBracket >= 0) start = Math.min(firstBrace, firstBracket);
+  else return null;
+  for (let end = trimmed.length; end > start; end--) {
+    try {
+      JSON.parse(trimmed.slice(start, end));
+      return trimmed.slice(start, end);
+    } catch {}
+  }
+  return null;
 }
 
 async function callOllama(url: string, body: unknown): Promise<Response> {
@@ -215,7 +211,6 @@ export async function POST(request: NextRequest) {
         model: extractModel,
         messages: [{ role: "user", content: structuredPrompt }],
         stream: false,
-        format: BASE_SCHEMA,
         options: { temperature: 0 },
       });
     } catch (err) {
@@ -281,6 +276,35 @@ export async function POST(request: NextRequest) {
         evalCount: ocrEvalCount,
         evalDuration: ocrEvalDuration,
       });
+    }
+
+    // Normalize: extract JSON, unwrap objects into arrays
+    {
+      const extracted = extractJSON(structuredRaw);
+      if (!extracted) {
+        console.error("[OCR] Gemma3 content is not valid JSON even after cleanup");
+        return NextResponse.json({
+          text: ocrText,
+          structured: null,
+          error: `${extractModel} returned invalid JSON`,
+          done: true,
+          evalCount: ocrEvalCount,
+          evalDuration: ocrEvalDuration,
+        });
+      }
+      let parsed: unknown = JSON.parse(extracted);
+      if (Array.isArray(parsed)) {
+        structuredRaw = JSON.stringify(parsed);
+      } else if (parsed && typeof parsed === "object") {
+        const obj = parsed as Record<string, unknown>;
+        if (Array.isArray(obj.fields)) {
+          structuredRaw = JSON.stringify(obj.fields);
+        } else {
+          structuredRaw = extracted;
+        }
+      } else {
+        structuredRaw = extracted;
+      }
     }
 
     const gemmaEvalCount = (gemmaData.eval_count as number) ?? undefined;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { Toaster, toast } from "sonner";
 import { Play, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -118,10 +119,12 @@ export function OcrApp() {
           return;
         }
 
-        // Show OCR result immediately
-        setResult({ text: ocrResult.text, done: true, ocrEvalDuration: ocrResult.ocrEvalDuration, ocrEvalCount: ocrResult.ocrEvalCount });
-        setLoading(false);
-        setExtracting(true);
+        // Show OCR result immediately (flushSync forces React to commit before Phase 2)
+        flushSync(() => {
+          setResult({ text: ocrResult.text, done: true, ocrEvalDuration: ocrResult.ocrEvalDuration, ocrEvalCount: ocrResult.ocrEvalCount });
+          setLoading(false);
+          setExtracting(true);
+        });
 
         // --- Phase 2: Structured extraction with pre-computed OCR text ---
         const structResult = await apiCall({ image, mode, ...settings, useStructured: true, structuredFields, ocrText: ocrResult.text });
