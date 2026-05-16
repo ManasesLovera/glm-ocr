@@ -276,15 +276,14 @@ export function OcrResult({ result, loading, extracting, extractionModel }: OcrR
             <>
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title="GLM-OCR recognition time">
                 <Clock className="h-3.5 w-3.5 text-indigo-500" />
-                OCR: {result.ocrEvalDuration >= 1_000_000_000
-                  ? `${(result.ocrEvalDuration / 1_000_000_000).toFixed(1)}s`
-                  : `${(result.ocrEvalDuration / 1_000_000).toFixed(0)}ms`}
+                OCR: {(result.ocrEvalDuration / 1_000_000_000).toFixed(1)}s
               </span>
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground" title={`${extractionModel || "gemma3:4b"} extraction time`}>
                 <Cpu className="h-3.5 w-3.5 text-amber-500" />
-                Extract: {result.gemmaEvalDuration >= 1_000_000_000
-                  ? `${(result.gemmaEvalDuration / 1_000_000_000).toFixed(1)}s`
-                  : `${(result.gemmaEvalDuration / 1_000_000).toFixed(0)}ms`}
+                Extract: {(result.gemmaEvalDuration / 1_000_000_000).toFixed(1)}s
+              </span>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" title="Total time (OCR + extraction)">
+                Total: {((result.ocrEvalDuration + result.gemmaEvalDuration) / 1_000_000_000).toFixed(1)}s
               </span>
             </>
           ) : result.evalDuration != null && (
