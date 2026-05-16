@@ -91,5 +91,8 @@ Settings are not persisted — defaults are always used on reload.
 ### Light mode
 <img width="1891" height="903" alt="image" src="https://github.com/user-attachments/assets/4e6fa2bb-aa28-4408-9831-98f66abb6470" />
 
+### Structured output with OCR + VLM
+<img width="855" height="833" alt="image" src="https://github.com/user-attachments/assets/e0496932-af4b-4aed-ae3f-5edb598f2cff" />
+
 
 
