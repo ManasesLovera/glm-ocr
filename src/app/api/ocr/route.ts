@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const maxDuration = 300;
+export const maxDuration = 600;
 
 const FIELD_ITEM_SCHEMA = {
   type: "object",
@@ -81,7 +81,7 @@ function extractJSON(raw: string): string | null {
 
 async function callOllama(url: string, body: unknown): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 300000);
+  const timer = setTimeout(() => controller.abort(), 600000);
   try {
     return await fetch(url, {
       method: "POST",

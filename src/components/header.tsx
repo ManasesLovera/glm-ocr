@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenSettings }: HeaderProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
@@ -30,11 +30,8 @@ export function Header({ onOpenSettings }: HeaderProps) {
             )}
             aria-label="Toggle theme"
           >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
+            <Moon className="h-4 w-4 dark:hidden" />
+            <Sun className="h-4 w-4 hidden dark:block" />
           </button>
 
           <button
