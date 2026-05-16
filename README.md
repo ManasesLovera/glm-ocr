@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GLM-OCR
+
+Next.js web UI for document OCR using [GLM-OCR](https://github.com/stephenc222/GLM-OCR) via [Ollama](https://ollama.com/). Supports text, table, and figure recognition with an optional structured extraction pipeline.
+
+## Prerequisites
+
+- [Ollama](https://ollama.com/) running locally (or on your network)
+- Pull the GLM-OCR model:
+  ```bash
+  ollama pull glm-ocr:q8_0
+  ```
+- (Optional) For structured extraction, pull an extraction model:
+  ```bash
+  ollama pull gemma3:4b
+  # or
+  ollama pull gemma4:12b-cloud
+  ```
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Start the dev server:
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Open **Settings** (gear icon) and configure your Ollama host URL and model if they differ from defaults.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+1. **Upload an image** — drag-and-drop or click to select
+2. **Choose a mode** — Text, Table, or Figure recognition
+3. **(Optional) Enable structured extraction** — toggle the switch and configure custom fields
+4. Click **Process** — OCR text is extracted and displayed
 
-To learn more about Next.js, take a look at the following resources:
+### Structured extraction (two-phase pipeline)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+When the structured toggle is enabled, processing runs in two phases:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **OCR** — GLM-OCR extracts raw text from the image (shown immediately)
+2. **Extraction** — A second model (gemma3:4b or gemma4:12b-cloud) parses the OCR text into structured JSON (document type, fields, tables, summary)
 
-## Deploy on Vercel
+Configure custom extraction fields via the **Configure fields (N)** button.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Configuration
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Ollama Host URL | `http://192.168.1.9:11434` | Ollama server address |
+| Model | `glm-ocr:q8_0` | OCR model |
+| Extraction Model | `gemma3:4b` | Model used for structured field extraction |
+
+Settings are not persisted — defaults are always used on reload.
+
+## Features
+
+- **Three recognition modes** — Text, Table, Figure (color-coded)
+- **Structured extraction** — Two-phase pipeline (OCR → extraction model)
+- **Custom fields** — Configure which fields to extract via modal
+- **Dark/light theme** — Persistent toggle with no flash on reload
+- **History panel** — Recent results cached with base64 image persistence (up to 50 items)
+- **Result caching** — Same image + mode reuses cached result
+- **Timing display** — Separate OCR and extraction durations shown
+
+## Tech stack
+
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
+- react-markdown + remark-gfm
+- lucide-react icons
+- sonner (toast notifications)
